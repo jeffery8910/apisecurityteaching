@@ -1,512 +1,725 @@
-import React, { useState, useEffect, useCallback } from 'react';
-
-// Tailwind CSS 透過 CDN 引入，因此可以直接使用其 class
-// <script src="https://cdn.tailwindcss.com"></script> in HTML
-
-const Card = ({ title, children }) => (
-    <div className="bg-white rounded-lg shadow-lg p-6 md:p-8 mb-6 animate-fadeIn">
-        {title && <h2 className="text-2xl font-bold text-gray-800 mb-6 pb-3 border-b border-gray-200">{title}</h2>}
-        {children}
-    </div>
-);
-
-const SimulatorBox = ({ title, children }) => (
-    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 my-6">
-        {title && <h3 className="text-xl font-semibold text-blue-700 mb-4">{title}</h3>}
-        {children}
-    </div>
-);
-
-const Note = ({ children }) => (
-    <div className="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 p-4 my-4 rounded-r-md">
-        {children}
-    </div>
-);
-
-const Button = ({ onClick, children, className = '', type = "button" }) => (
-    <button
-        type={type}
-        onClick={onClick}
-        className={`bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out ${className}`}
-    >
-        {children}
-    </button>
-);
-
-const Input = ({ label, id, value, onChange, type = "text", placeholder = "" }) => (
-    <div className="mb-4">
-        <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-        <input
-            type={type}
-            id={id}
-            value={value}
-            onChange={onChange}
-            placeholder={placeholder}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-        />
-    </div>
-);
-
-const TextArea = ({ label, id, value, onChange, rows = 3 }) => (
-    <div className="mb-4">
-        <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-        <textarea
-            id={id}
-            value={value}
-            onChange={onChange}
-            rows={rows}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-        />
-    </div>
-);
-
-const TabButton = ({ label, isActive, onClick }) => (
-    <button
-        className={`py-3 px-4 md:px-6 text-sm md:text-base font-medium text-center transition-all duration-300 ease-in-out border-b-4 focus:outline-none
-            ${isActive 
-                ? 'border-blue-500 text-blue-700' 
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-        onClick={onClick}
-    >
-        {label}
-    </button>
-);
-
-// 內容組件
-const IntroTab = () => (
-    <Card title="歡迎來到 API 安全性！">
-        <p>安全性對於任何 Web 應用程式都至關重要，尤其是對於其他開發人員可能使用的 API。一個安全性錯誤可能導致嚴重問題，例如遺失重要資料或造成金錢損失。本指南將引導您了解確保 API 安全性的關鍵概念。</p>
-        <p>我們將涵蓋常見的實踐，例如輸入驗證、使用 SSL (HTTPS)、檢查內容類型、保留稽核日誌，以及防範 CSRF 和 XSS 等攻擊。除此之外，我們還將深入探討專門針對向外部開發人員公開的 Web API 的技術。</p>
-        <h3 className="text-xl font-semibold text-gray-700 mt-6 mb-3">身份驗證 vs. 授權</h3>
-        <p>這兩者是安全性的基石：</p>
-        <ul className="list-disc list-inside space-y-2 mb-4">
-            <li><strong>身份驗證 (Authentication)：</strong> 這是關於證明<strong>你是誰</strong>。把它想像成在建築物入口出示你的身份證。對於 Web 應用程式，通常是使用者名稱和密碼。</li>
-            <li><strong>授權 (Authorization)：</strong> 這是關於檢查你進入後<strong>被允許做什麼</strong>。僅僅因為你在建築物內（已通過身份驗證）並不意味著你可以進入每個房間。管理員可能可以編輯頁面，而一般使用者只能查看。</li>
-        </ul>
-        <p>當您設計 API 時，您需要弄清楚使用您 API 的開發人員將如何處理這兩者。</p>
-    </Card>
-);
-
-const BasicAuthTab = () => {
-    const [user, setUser] = useState('user');
-    const [pass, setPass] = useState('password');
-    const [combined, setCombined] = useState('');
-    const [encoded, setEncoded] = useState('');
-    const [headerOutput, setHeaderOutput] = useState('Authorization: Basic ...');
-
-    const generateBasicAuthHeader = useCallback(() => {
-        const c = `${user}:${pass}`;
-        setCombined(c);
-        try {
-            const e = btoa(c);
-            setEncoded(e);
-            setHeaderOutput(`Authorization: Basic ${e}`);
-        } catch (error) {
-            setEncoded("編碼錯誤（可能包含非 ASCII 字元）。");
-            setHeaderOutput('Authorization: Basic ...');
-            console.error("Base64 encoding error:", error);
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>互動式 API 安全性指南 (HTML/JS)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom animations and minor overrides */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-    }, [user, pass]);
+        .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
 
-    useEffect(() => {
-        generateBasicAuthHeader();
-    }, [generateBasicAuthHeader]);
+        /* For sticky tab bar */
+        .sticky-nav {
+            position: -webkit-sticky; /* Safari */
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: white; /* Ensure it has a background when sticky */
+        }
+        /* Ensure pre tags wrap content */
+        pre {
+            white-space: pre-wrap;       /* Since CSS 2.1 */
+            white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+            white-space: -pre-wrap;      /* Opera 4-6 */
+            white-space: -o-pre-wrap;    /* Opera 7 */
+            word-wrap: break-word;       /* Internet Explorer 5.5+ */
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-blue-700">互動式 API 安全性指南</h1>
+            <p class="text-md md:text-lg text-gray-600 mt-2">逐步探索 API 安全核心概念 (HTML/JS 版本)</p>
+        </header>
 
-    return (
-        <Card title="基本身份驗證">
-            <p>早期，「基本身份驗證」是保護 API 的一種常見方式。它是 Web 上最簡單的存取控制技術。</p>
-            <h3 className="text-xl font-semibold text-gray-700 mt-6 mb-3">運作方式：</h3>
-            <ol className="list-decimal list-inside space-y-2 mb-4">
-                <li>用戶端（嘗試使用 API 的應用程式）取得使用者名稱和密碼。</li>
-                <li>它用冒號將它們組合起來：<code>使用者名稱:密碼</code>。</li>
-                <li>然後使用 Base64 對這個組合字串進行編碼。Base64 是一種將二進位資料表示為文字的方式。</li>
-                <li>用戶端傳送一個帶有 <code>Authorization</code> 標頭的 HTTP 請求。該標頭看起來像：<code>Authorization: Basic &lt;base64_encoded_string&gt;</code>。</li>
-            </ol>
-            
-            <SimulatorBox title="試試看：基本身份驗證標頭產生器">
-                <Input label="使用者名稱：" id="basicUser" value={user} onChange={(e) => setUser(e.target.value)} />
-                <Input label="密碼：" id="basicPass" type="password" value={pass} onChange={(e) => setPass(e.target.value)} />
-                <Button onClick={generateBasicAuthHeader} className="mb-4">產生標頭</Button>
-                <p className="mt-3 text-sm"><strong>組合字串 (使用者名稱:密碼)：</strong> <code className="text-sm">{combined}</code></p>
-                <p className="text-sm"><strong>Base64 編碼後：</strong> <code className="text-sm">{encoded}</code></p>
-                <p className="text-sm"><strong>HTTP Authorization 標頭：</strong></p>
-                <pre className="bg-gray-800 text-gray-100 p-3 rounded-md text-sm"><code className="text-sm">{headerOutput}</code></pre>
-            </SimulatorBox>
+        <div id="tab-navigation-container" class="mb-6 shadow-md rounded-lg sticky-nav">
+            <div class="border-b border-gray-200">
+                <nav id="tabs-nav" class="-mb-px flex flex-wrap justify-center" aria-label="Tabs">
+                    <!-- Tab buttons will be generated here by JS -->
+                </nav>
+            </div>
+        </div>
+        
+        <main id="tab-content-container">
+            <!-- Active tab content will be rendered here by JS -->
+        </main>
 
-            <h3 className="text-xl font-semibold text-gray-700 mt-6 mb-3">基本身份驗證的缺點</h3>
-            <p>雖然簡單，但基本身份驗證存在重大的安全性弱點：</p>
-            <ul className="list-disc list-inside space-y-2 mb-4">
-                <li><strong>憑證與第三方共享：</strong>使用者可能需要將其主要的使用者名稱和密碼提供給第三方應用程式。這很危險！</li>
-                <li><strong>應用程式儲存憑證：</strong>應用程式可能不安全地儲存這些憑證。如果應用程式被駭，使用者的憑證（可能在其他地方重複使用）就會洩露。</li>
-                <li><strong>無精細的存取控制：</strong>使用者無法限制應用程式可以做什麼。應用程式可以完全存取其帳戶。</li>
-                <li><strong>撤銷困難：</strong>要撤銷對某個應用程式的存取權限，使用者必須更改其密碼，這會影響所有使用這些憑證的應用程式。</li>
-            </ul>
-            <Note>
-                <p>由於這些問題，像 Twitter 這樣的主要服務已停止對其核心 API 使用基本身份驗證（Twitter 於 2010 年停止使用）。</p>
-            </Note>
-        </Card>
-    );
-};
+        <footer class="text-center mt-12 py-8 border-t border-gray-200">
+            <p class="text-sm text-gray-500">© <span id="current-year"></span> API 安全性學習資源</p>
+        </footer>
+    </div>
 
-const OAuthIntroTab = () => (
-    <Card title="OAuth 2.0：現代標準">
-        <p>為了解決基本身份驗證和其他舊方法的問题，<strong>OAuth</strong> 於 2007 年推出。目前的版本 <strong>OAuth 2.0</strong> 是業界標準的授權協定。Google、Facebook、GitHub、Stripe 和 Slack 等公司都在使用它。</p>
-        <h3 className="text-xl font-semibold text-gray-700 mt-6 mb-3">OAuth 為何如此出色</h3>
-        <ol className="list-decimal list-inside space-y-3 mb-4">
-            <li>
-                <strong>無需共享密碼：</strong> 這是最大的優點！使用者授予應用程式存取權限，<em>而無需</em>向其提供密碼。
-                <p className="mt-2"><strong>範例 (TripAdvisor & Facebook)：</strong> 想像一下 TripAdvisor 想要使用您的 Facebook 個人資料和好友列表。透過 OAuth：</p>
-                <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
-                    <li>TripAdvisor 將您重新導向到 Facebook。</li>
-                    <li>您直接在 Facebook 上登入（TripAdvisor 永遠不會看到您的密碼）。</li>
-                    <li>您告訴 Facebook，TripAdvisor 可以存取特定資訊。（這稱為「授予同意」或「授權」應用程式）。</li>
-                    <li>然後 Facebook 給 TripAdvisor 一個特殊的「金鑰」（存取權杖）以取得該資訊。</li>
+    <script>
+        // --- Global State (for simplicity in this conversion) ---
+        let activeTabId = 'intro';
+
+        // BasicAuthTab State
+        let basicAuthUser = 'user';
+        let basicAuthPass = 'password';
+        let basicAuthCombined = '';
+        let basicAuthEncoded = '';
+        let basicAuthHeaderOutput = 'Authorization: Basic ...';
+
+        // OAuthFlowTab State
+        let oauthSimStep = 0; 
+        const oauthSimClientId = "mock_client_id_123";
+        const oauthSimClientSecret = "super_secret_shhh";
+        const oauthSimRedirectUri = "https://mycoolapp.com/callback";
+        const oauthSimAuthCode = "mock_auth_code_xyz789";
+        const oauthSimAccessToken = "mock_access_token_abc123def456";
+        
+        // WebhooksTab State
+        let whExpectedToken = 'secret_token_123';
+        let whReceivedToken = 'secret_token_123';
+        let whTokenResult = { text: '', type: '' };
+
+        let whPayload = '{ "event": "payment.succeeded", "data": { "amount": 1000 } }';
+        let whSecret = 'whsec_verysecretkey';
+        let whTimestamp = Math.floor(Date.now() / 1000).toString();
+        let whGeneratedSignature = '';
+        let whReceivedHeader = '';
+        let whVerificationStatus = { text: '', type: '' };
+
+
+        // --- Helper Functions (to generate HTML) ---
+        const Card = ({ title, children }) => `
+            <div class="bg-white rounded-lg shadow-lg p-6 md:p-8 mb-6 animate-fadeIn">
+                ${title ? `<h2 class="text-2xl font-bold text-gray-800 mb-6 pb-3 border-b border-gray-200">${title}</h2>` : ''}
+                ${children}
+            </div>
+        `;
+
+        const SimulatorBox = ({ title, children }) => `
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 my-6">
+                ${title ? `<h3 class="text-xl font-semibold text-blue-700 mb-4">${title}</h3>` : ''}
+                ${children}
+            </div>
+        `;
+
+        const Note = ({ children }) => `
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 p-4 my-4 rounded-r-md">
+                ${children}
+            </div>
+        `;
+
+        const Button = ({ onClick, children, className = '', type = "button", disabled = false, id = '' }) => `
+            <button
+                type="${type}"
+                ${id ? `id="${id}"` : ''}
+                ${onClick ? `onclick="${onClick}"` : ''} 
+                ${disabled ? 'disabled' : ''}
+                class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out ${className} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}"
+            >
+                ${children}
+            </button>
+        `;
+
+        const Input = ({ label, id, value, onInput, type = "text", placeholder = "" }) => `
+            <div class="mb-4">
+                <label for="${id}" class="block text-sm font-medium text-gray-700 mb-1">${label}</label>
+                <input
+                    type="${type}"
+                    id="${id}"
+                    value="${value}"
+                    ${onInput ? `oninput="${onInput}"` : ''}
+                    placeholder="${placeholder}"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+            </div>
+        `;
+        
+        const TextArea = ({ label, id, value, onInput, rows = 3 }) => `
+            <div class="mb-4">
+                <label for="${id}" class="block text-sm font-medium text-gray-700 mb-1">${label}</label>
+                <textarea
+                    id="${id}"
+                    ${onInput ? `oninput="${onInput}"` : ''}
+                    rows="${rows}"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                >${value}</textarea>
+            </div>
+        `;
+
+        const TabButton = ({ label, isActive, onClick }) => `
+            <button
+                onclick="${onClick}"
+                class="py-3 px-4 md:px-6 text-sm md:text-base font-medium text-center transition-all duration-300 ease-in-out border-b-4 focus:outline-none
+                    ${isActive 
+                        ? 'border-blue-500 text-blue-700' 
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }"
+            >
+                ${label}
+            </button>
+        `;
+
+        // --- Content Rendering Functions ---
+        const renderIntroTab = () => Card({
+            title: "歡迎來到 API 安全性！",
+            children: `
+                <p>安全性對於任何 Web 應用程式都至關重要，尤其是對於其他開發人員可能使用的 API。一個安全性錯誤可能導致嚴重問題，例如遺失重要資料或造成金錢損失。本指南將引導您了解確保 API 安全性的關鍵概念。</p>
+                <p>我們將涵蓋常見的實踐，例如輸入驗證、使用 SSL (HTTPS)、檢查內容類型、保留稽核日誌，以及防範 CSRF 和 XSS 等攻擊。除此之外，我們還將深入探討專門針對向外部開發人員公開的 Web API 的技術。</p>
+                <h3 class="text-xl font-semibold text-gray-700 mt-6 mb-3">身份驗證 vs. 授權</h3>
+                <p>這兩者是安全性的基石：</p>
+                <ul class="list-disc list-inside space-y-2 mb-4">
+                    <li><strong>身份驗證 (Authentication)：</strong> 這是關於證明<strong>你是誰</strong>。把它想像成在建築物入口出示你的身份證。對於 Web 應用程式，通常是使用者名稱和密碼。</li>
+                    <li><strong>授權 (Authorization)：</strong> 這是關於檢查你進入後<strong>被允許做什麼</strong>。僅僅因為你在建築物內（已通過身份驗證）並不意味著你可以進入每個房間。管理員可能可以編輯頁面，而一般使用者只能查看。</li>
                 </ul>
-                <p className="italic text-sm text-gray-500 mt-1">（這與文本中的圖 3-1 類似，說明了 TripAdvisor 和 Facebook 之間的流程。）</p>
-            </li>
-            <li>
-                <strong>選擇性權限 (範圍)：</strong> 使用者可以授予有限的存取權限。TripAdvisor 可能獲得讀取您的個人資料和好友列表的權限，但不能代表您發布貼文。每個應用程式僅請求其需要的「範圍」(權限)。
-            </li>
-            <li>
-                <strong>輕鬆撤銷：</strong> 如果您不再希望 TripAdvisor 存取您的 Facebook 資料，您可以前往 Facebook 設定並撤銷其存取權限。您無需更改 Facebook 密碼。
-            </li>
-        </ol>
-    </Card>
-);
+                <p>當您設計 API 時，您需要弄清楚使用您 API 的開發人員將如何處理這兩者。</p>
+            `
+        });
 
-const OAuthFlowTab = () => {
-    const [simStep, setSimStep] = useState(0); // 0: initial, 1: user auth, 2: code issued, 3: token exchanged, 4: API accessed, 5: denied
-    const simClientId = "mock_client_id_123";
-    const simClientSecret = "super_secret_shhh";
-    const simRedirectUri = "https://mycoolapp.com/callback";
-    const simAuthCode = "mock_auth_code_xyz789";
-    const simAccessToken = "mock_access_token_abc123def456";
+        const renderBasicAuthTab = () => {
+            // Initial generation
+            if (!basicAuthCombined) generateBasicAuthHeaderLogic(); 
 
-    return (
-        <Card title="OAuth 2.0：權杖產生流程 (授權碼模式)">
-            <p>透過 OAuth，應用程式使用<strong>存取權杖 (access token)</strong> 代表使用者呼叫 API。取得此權杖涉及一個多步驟流程。Web 應用程式最常用的是「授權碼模式 (Authorization Code Grant)」。</p>
+            return Card({
+                title: "基本身份驗證",
+                children: `
+                    <p>早期，「基本身份驗證」是保護 API 的一種常見方式。它是 Web 上最簡單的存取控制技術。</p>
+                    <h3 class="text-xl font-semibold text-gray-700 mt-6 mb-3">運作方式：</h3>
+                    <ol class="list-decimal list-inside space-y-2 mb-4">
+                        <li>用戶端（嘗試使用 API 的應用程式）取得使用者名稱和密碼。</li>
+                        <li>它用冒號將它們組合起來：<code>使用者名稱:密碼</code>。</li>
+                        <li>然後使用 Base64 對這個組合字串進行編碼。Base64 是一種將二進位資料表示為文字的方式。</li>
+                        <li>用戶端傳送一個帶有 <code>Authorization</code> 標頭的 HTTP 請求。該標頭看起來像：<code>Authorization: Basic <base64_encoded_string></code>。</li>
+                    </ol>
+                    
+                    ${SimulatorBox({
+                        title: "試試看：基本身份驗證標頭產生器",
+                        children: `
+                            ${Input({ label: "使用者名稱：", id: "basicUser", value: basicAuthUser, onInput: "updateBasicAuthUser(this.value)" })}
+                            ${Input({ label: "密碼：", id: "basicPass", type: "password", value: basicAuthPass, onInput: "updateBasicAuthPass(this.value)" })}
+                            ${Button({ onClick: "generateBasicAuthHeaderLogic(true)", children: "產生標頭", className: "mb-4" })}
+                            <p class="mt-3 text-sm"><strong>組合字串 (使用者名稱:密碼)：</strong> <code id="basicAuthCombined" class="text-sm">${basicAuthCombined}</code></p>
+                            <p class="text-sm"><strong>Base64 編碼後：</strong> <code id="basicAuthEncoded" class="text-sm">${basicAuthEncoded}</code></p>
+                            <p class="text-sm"><strong>HTTP Authorization 標頭：</strong></p>
+                            <pre class="bg-gray-800 text-gray-100 p-3 rounded-md text-sm"><code id="basicAuthHeaderOutput" class="text-sm">${basicAuthHeaderOutput}</code></pre>
+                        `
+                    })}
 
-            <h3 className="text-lg font-semibold text-gray-700 mt-4 mb-2">流程開始前：應用程式註冊</h3>
-            <p>應用程式的開發人員（例如 TripAdvisor）必須先向 API 提供者（例如 Facebook）註冊其應用程式。</p>
-            <ul className="list-disc list-inside space-y-1 mb-3">
-                <li>他們提供一個<strong>重新導向 URL</strong> (或回呼 URL)：這是 API 提供者在使用者授權（或拒絕）應用程式後將使用者傳送回去的地方。</li>
-                <li>API 提供者會向應用程式核發唯一的<strong>用戶端 ID</strong> (公開) 和<strong>用戶端密鑰</strong> (機密，請妥善保管！)。</li>
-            </ul>
+                    <h3 class="text-xl font-semibold text-gray-700 mt-6 mb-3">基本身份驗證的缺點</h3>
+                    <p>雖然簡單，但基本身份驗證存在重大的安全性弱點：</p>
+                    <ul class="list-disc list-inside space-y-2 mb-4">
+                        <li><strong>憑證與第三方共享：</strong>使用者可能需要將其主要的使用者名稱和密碼提供給第三方應用程式。這很危險！</li>
+                        <li><strong>應用程式儲存憑證：</strong>應用程式可能不安全地儲存這些憑證。如果應用程式被駭，使用者的憑證（可能在其他地方重複使用）就會洩露。</li>
+                        <li><strong>無精細的存取控制：</strong>使用者無法限制應用程式可以做什麼。應用程式可以完全存取其帳戶。</li>
+                        <li><strong>撤銷困難：</strong>要撤銷對某個應用程式的存取權限，使用者必須更改其密碼，這會影響所有使用這些憑證的應用程式。</li>
+                    </ul>
+                    ${Note({
+                        children: `<p>由於這些問題，像 Twitter 這樣的主要服務已停止對其核心 API 使用基本身份驗證（Twitter 於 2010 年停止使用）。</p>`
+                    })}
+                `
+            });
+        };
+        
+        const renderOAuthIntroTab = () => Card({
+            title: "OAuth 2.0：現代標準",
+            children: `
+                <p>為了解決基本身份驗證和其他舊方法的問题，<strong>OAuth</strong> 於 2007 年推出。目前的版本 <strong>OAuth 2.0</strong> 是業界標準的授權協定。Google、Facebook、GitHub、Stripe 和 Slack 等公司都在使用它。</p>
+                <h3 class="text-xl font-semibold text-gray-700 mt-6 mb-3">OAuth 為何如此出色</h3>
+                <ol class="list-decimal list-inside space-y-3 mb-4">
+                    <li>
+                        <strong>無需共享密碼：</strong> 這是最大的優點！使用者授予應用程式存取權限，<em>而無需</em>向其提供密碼。
+                        <p class="mt-2"><strong>範例 (TripAdvisor & Facebook)：</strong> 想像一下 TripAdvisor 想要使用您的 Facebook 個人資料和好友列表。透過 OAuth：</p>
+                        <ul class="list-disc list-inside ml-4 mt-1 space-y-1">
+                            <li>TripAdvisor 將您重新導向到 Facebook。</li>
+                            <li>您直接在 Facebook 上登入（TripAdvisor 永遠不會看到您的密碼）。</li>
+                            <li>您告訴 Facebook，TripAdvisor 可以存取特定資訊。（這稱為「授予同意」或「授權」應用程式）。</li>
+                            <li>然後 Facebook 給 TripAdvisor 一個特殊的「金鑰」（存取權杖）以取得該資訊。</li>
+                        </ul>
+                        <p class="italic text-sm text-gray-500 mt-1">（這與文本中的圖 3-1 類似，說明了 TripAdvisor 和 Facebook 之間的流程。）</p>
+                    </li>
+                    <li>
+                        <strong>選擇性權限 (範圍)：</strong> 使用者可以授予有限的存取權限。TripAdvisor 可能獲得讀取您的個人資料和好友列表的權限，但不能代表您發布貼文。每個應用程式僅請求其需要的「範圍」(權限)。
+                    </li>
+                    <li>
+                        <strong>輕鬆撤銷：</strong> 如果您不再希望 TripAdvisor 存取您的 Facebook 資料，您可以前往 Facebook 設定並撤銷其存取權限。您無需更改 Facebook 密碼。
+                    </li>
+                </ol>
+            `
+        });
 
-            <h3 className="text-lg font-semibold text-gray-700 mt-4 mb-2">取得存取權杖的步驟：</h3>
-            <ol className="list-decimal list-inside space-y-2 mb-4">
-                <li><strong>使用者授權請求</strong></li>
-                <li><strong>使用者授予 (或拒絕) 權限</strong></li>
-                <li><strong>應用程式用授權碼交換存取權杖</strong></li>
-                <li><strong>應用程式存取受保護的資源</strong></li>
-            </ol>
-            <p className="italic text-sm text-gray-500 mb-4">（文本中的圖 3-3 描述了這整個 OAuth 2.0 授權碼授予流程。）</p>
-            
-            <SimulatorBox title="模擬：OAuth 2.0 授權碼流程 (簡化版)">
-                <p className="text-xs text-gray-600 mb-3">這是一個簡化的模擬。不會進行實際的網路請求。</p>
-                
-                {simStep === 0 && (
+        const renderOAuthFlowTabContent = () => {
+            let content = '';
+            if (oauthSimStep === 0) {
+                content = `
                     <div>
-                        <h4 className="font-semibold mb-1">步驟 0：應用程式註冊 (先決條件)</h4>
-                        <p className="text-sm">您的應用程式「MyCoolApp」已在「ServiceX」註冊。</p>
-                        <p className="text-sm"><strong>用戶端 ID：</strong> <code>{simClientId}</code></p>
-                        <p className="text-sm"><strong>用戶端密鑰：</strong> <code>{simClientSecret}</code> (保存在您的伺服器上)</p>
-                        <p className="text-sm"><strong>重新導向 URI：</strong> <code>{simRedirectUri}</code></p>
-                        <Button onClick={() => setSimStep(1)} className="mt-3">1. 使用者點擊「使用 ServiceX 連接」</Button>
+                        <h4 class="font-semibold mb-1">步驟 0：應用程式註冊 (先決條件)</h4>
+                        <p class="text-sm">您的應用程式「MyCoolApp」已在「ServiceX」註冊。</p>
+                        <p class="text-sm"><strong>用戶端 ID：</strong> <code>${oauthSimClientId}</code></p>
+                        <p class="text-sm"><strong>(模擬的) 用戶端密鑰：</strong> <code>${oauthSimClientSecret}</code> (實際上儲存在後端)</p>
+                        <p class="text-sm"><strong>重新導向 URI：</strong> <code>${oauthSimRedirectUri}</code></p>
+                        ${Button({ onClick: "setOAuthSimStep(1)", children: "1. 使用者點擊「使用 ServiceX 連接」", className: "mt-3" })}
                     </div>
-                )}
-
-                {simStep === 1 && (
+                `;
+            } else if (oauthSimStep === 1) {
+                content = `
                     <div>
-                        <h4 className="font-semibold mb-1">步驟 1 & 2：使用者在 ServiceX 進行授權</h4>
-                        <p className="text-sm">您的應用程式已將使用者重新導向至 ServiceX。ServiceX 顯示此同意畫面：</p>
-                        <div className="p-3 my-2 border border-gray-300 rounded bg-white text-sm">
-                            <p className="font-semibold">ServiceX</p>
+                        <h4 class="font-semibold mb-1">步驟 1 & 2：使用者在 ServiceX 進行授權</h4>
+                        <p class="text-sm">您的應用程式已將使用者重新導向至 ServiceX。ServiceX 顯示此同意畫面：</p>
+                        <div class="p-3 my-2 border border-gray-300 rounded bg-white text-sm">
+                            <p class="font-semibold">ServiceX 授權頁面</p>
                             <p>「MyCoolApp」正在請求以下權限：</p>
-                            <ul className="list-disc list-inside ml-4 my-1">
+                            <ul class="list-disc list-inside ml-4 my-1">
                                 <li>存取您的基本個人資料資訊 (<code>read_profile</code>)</li>
                                 <li>檢視您的相片 (<code>read_photos</code>)</li>
                             </ul>
                             <p>您是否批准？</p>
-                            <Button onClick={() => setSimStep(2)} className="bg-green-500 hover:bg-green-600 text-xs px-2 py-1">批准</Button>
-                            <Button onClick={() => setSimStep(5)} className="bg-red-500 hover:bg-red-600 ml-2 text-xs px-2 py-1">拒絕</Button>
+                            ${Button({ onClick: "setOAuthSimStep(2)", children: "批准", className: "bg-green-500 hover:bg-green-600 text-xs px-2 py-1" })}
+                            ${Button({ onClick: "setOAuthSimStep(5)", children: "拒絕", className: "bg-red-500 hover:bg-red-600 ml-2 text-xs px-2 py-1" })}
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">在幕後，您的應用程式傳送了：<code>client_id</code>、<code>scope=read_profile read_photos</code>、<code>redirect_uri</code>、<code>response_type=code</code>。</p>
+                        <p class="text-xs text-gray-500 mt-1">在幕後，您的應用程式傳送了：<code>client_id</code>、<code>scope=read_profile read_photos</code>、<code>redirect_uri</code>、<code>response_type=code</code>。</p>
                     </div>
-                )}
-
-                {simStep === 2 && (
+                `;
+            } else if (oauthSimStep === 2) {
+                 content = `
                      <div>
-                        <h4 className="font-semibold mb-1">步驟 2 (續)：ServiceX 帶著授權碼重新導向回來</h4>
-                        <p className="text-green-600 text-sm font-semibold">使用者已批准存取！</p>
-                        <p className="text-sm">ServiceX 將使用者重新導向回您的應用程式的重新導向 URI (<code>{simRedirectUri}</code>)，並附帶：</p>
-                        <p className="text-sm"><strong>授權碼：</strong> <code>{simAuthCode}</code></p>
-                        <Button onClick={() => setSimStep(3)} className="mt-3">3. 應用程式用授權碼交換存取權杖</Button>
+                        <h4 class="font-semibold mb-1">步驟 2 (續)：ServiceX 帶著授權碼重新導向回來</h4>
+                        <p class="text-green-600 text-sm font-semibold">使用者已批准存取！</p>
+                        <p class="text-sm">ServiceX 將使用者重新導向回您的應用程式的重新導向 URI (<code>${oauthSimRedirectUri}</code>)，並附帶：</p>
+                        <p class="text-sm"><strong>授權碼 (Authorization Code)：</strong> <code class="bg-yellow-100 p-1 rounded">${oauthSimAuthCode}</code> (此碼通常很短效)</p>
+                        ${Button({ onClick: "setOAuthSimStep(3)", children: "3. 應用程式 (後端) 用授權碼交換存取權杖", className: "mt-3" })}
                     </div>
-                )}
-                
-                {simStep === 3 && (
+                `;
+            } else if (oauthSimStep === 3) {
+                content = `
                     <div>
-                        <h4 className="font-semibold mb-1">步驟 3：應用程式用授權碼交換存取權杖 (伺服器到伺服器)</h4>
-                        <p className="text-sm">您的應用程式伺服器向 ServiceX 的權杖端點傳送一個 POST 請求，其中包含：</p>
-                        <pre className="bg-gray-800 text-gray-100 p-2 rounded-md text-xs my-2"><code>{`grant_type=authorization_code
-code=${simAuthCode}
-redirect_uri=${simRedirectUri}
-client_id=${simClientId}
-client_secret=${simClientSecret}`}</code></pre>
-                        <p className="text-sm">ServiceX 驗證此請求並回應：</p>
-                        <pre className="bg-gray-800 text-gray-100 p-2 rounded-md text-xs my-2"><code>{`{
-  "access_token": "${simAccessToken}",
+                        <h4 class="font-semibold mb-1">步驟 3：應用程式 (後端) 用授權碼交換存取權杖</h4>
+                        <p class="text-sm">您的應用程式伺服器 (後端) 向 ServiceX 的權杖端點傳送一個 POST 請求，其中包含：</p>
+                        <pre class="bg-gray-800 text-gray-100 p-2 rounded-md text-xs my-2"><code>POST /token HTTP/1.1
+Host: api.servicex.com
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=authorization_code
+&code=${oauthSimAuthCode}
+&redirect_uri=${encodeURIComponent(oauthSimRedirectUri)}
+&client_id=${oauthSimClientId}
+&client_secret=${oauthSimClientSecret}</code></pre>
+                        <p class="text-sm">ServiceX 驗證此請求並回應 (給後端)：</p>
+                        <pre class="bg-gray-800 text-gray-100 p-2 rounded-md text-xs my-2"><code>{
+  "access_token": "${oauthSimAccessToken}",
   "token_type": "Bearer",
   "expires_in": 3600,
+  "refresh_token": "mock_refresh_token_optional",
   "scope": "read_profile read_photos"
-}`}</code></pre>
-                        <Button onClick={() => setSimStep(4)} className="mt-3">4. 應用程式使用存取權杖</Button>
+}</code></pre>
+                        ${Button({ onClick: "setOAuthSimStep(4)", children: "4. (後端取得權杖後) 應用程式使用存取權杖", className: "mt-3" })}
                     </div>
-                )}
-
-                {simStep === 4 && (
+                `;
+            } else if (oauthSimStep === 4) {
+                content = `
                     <div>
-                        <h4 className="font-semibold mb-1">步驟 4：應用程式存取受保護的資源</h4>
-                        <p className="text-sm">您的應用程式現在可以使用存取權杖向 ServiceX 發出 API 呼叫。</p>
-                        <p className="text-sm">呼叫 <code>https://api.servicex.com/v1/me</code> 的 API 範例：</p>
-                        <pre className="bg-gray-800 text-gray-100 p-2 rounded-md text-xs my-2"><code>{`GET /v1/me HTTP/1.1
+                        <h4 class="font-semibold mb-1">步驟 4：應用程式存取受保護的資源</h4>
+                        <p class="text-sm">您的應用程式 (可能是前端或後端) 現在可以使用存取權杖向 ServiceX 發出 API 呼叫。</p>
+                        <p class="text-sm">呼叫 <code>https://api.servicex.com/v1/me</code> 的 API 範例：</p>
+                        <pre class="bg-gray-800 text-gray-100 p-2 rounded-md text-xs my-2"><code>GET /v1/me HTTP/1.1
 Host: api.servicex.com
-Authorization: Bearer ${simAccessToken}`}</code></pre>
-                        <p className="text-sm mt-2 p-2 bg-green-100 text-green-700 rounded-md">API 呼叫成功！已取得使用者資料。</p>
-                        <Button onClick={() => setSimStep(0)} className="mt-3">重設模擬</Button>
+Authorization: Bearer ${oauthSimAccessToken}</code></pre>
+                        <p class="text-sm mt-2 p-2 bg-green-100 text-green-700 rounded-md">API 呼叫成功！已取得使用者資料。</p>
+                        ${Button({ onClick: "resetOAuthSimulation()", children: "重設模擬", className: "mt-3" })}
                     </div>
-                )}
-                 {simStep === 5 && (
+                `;
+            } else if (oauthSimStep === 5) {
+                content = `
                     <div>
-                        <p className="text-sm mt-2 p-2 bg-red-100 text-red-700 rounded-md">使用者拒絕存取。應用程式在其重新導向 URI 收到 <code>access_denied</code> 錯誤。</p>
-                        <Button onClick={() => setSimStep(0)} className="mt-3">重設模擬</Button>
+                        <p class="text-sm mt-2 p-2 bg-red-100 text-red-700 rounded-md">使用者拒絕存取。應用程式在其重新導向 URI 收到 <code>access_denied</code> 錯誤。</p>
+                        ${Button({ onClick: "resetOAuthSimulation()", children: "重設模擬", className: "mt-3" })}
                     </div>
-                )}
-            </SimulatorBox>
-
-            <h3 className="text-lg font-semibold text-gray-700 mt-6 mb-2">範圍 (Scopes)</h3>
-            <p>OAuth 範圍限制應用程式對使用者資料的存取。應用程式僅請求其需要的內容，而不是取得完整存取權限。</p>
-            <h3 className="text-lg font-semibold text-gray-700 mt-6 mb-2">權杖驗證</h3>
-            <p>當 API 伺服器收到帶有存取權杖的請求時，它必須驗證權杖有效性與權限範圍。</p>
-            <h3 className="text-lg font-semibold text-gray-700 mt-6 mb-2">權杖過期與更新權杖</h3>
-            <p>存取權杖通常會過期。更新權杖可用於取得新的存取權杖。</p>
-            <h3 className="text-lg font-semibold text-gray-700 mt-6 mb-2">列出與撤銷授權</h3>
-            <p>使用者應能查看並撤銷已授權的應用程式。</p>
-        </Card>
-    );
-};
-
-const OAuthBestPracticesTab = () => (
-    <Card title="OAuth 2.0：最佳實踐">
-        <p>在建立您自己的 OAuth 授權伺服器時，請考量以下最佳實踐：</p>
-        <ul className="list-disc list-inside space-y-2 my-4">
-            <li>支援 <code>state</code> 參數以防 CSRF。</li>
-            <li>短期且一次性使用的授權碼。</li>
-            <li>考慮一次性更新權杖 (用於敏感資料)。</li>
-            <li>提供重設用戶端密鑰的能力。</li>
-            <li>為敏感資訊設定專用 OAuth 範圍。</li>
-            <li>所有端點強制使用 HTTPS。</li>
-            <li>嚴格驗證重新導向 URL。</li>
-            <li>禁止在 iframe 中呈現授權畫面 (防點擊劫持)。</li>
-            <li>讓使用者知情新授權。</li>
-            <li>禁止誤導性的應用程式名稱。</li>
-        </ul>
-        <Note>
-            <p><strong>故事：Google 文件網路釣魚攻擊 (2017)。</strong>一名攻擊者建立了一個名為「Google 文件」的惡意 Google OAuth 應用程式，成功釣魚了約一百萬個 Google 帳戶。</p>
-        </Note>
-        <h3 className="text-xl font-semibold text-gray-700 mt-6 mb-3">從 Facebook 學到的教訓：權衡之舉</h3>
-        <p>Facebook 的平台因開發者應用程式存取使用者資料的方式而受到嚴格審查。主要啟示：</p>
-        <ul className="list-disc list-inside space-y-2 my-4">
-            <li><strong>明確同意：</strong>確保使用者確切了解他們授予的權限。</li>
-            <li><strong>監控第三方應用程式：</strong>積極尋找違反服務條款的開發者。</li>
-            <li><strong>信任是關鍵：</strong>平台與客戶之間的信任至關重要。</li>
-            <li><strong>隱私與安全性的理解：</strong>向消費者清楚傳達平台功能。</li>
-        </ul>
-    </Card>
-);
-
-const WebhooksTab = () => {
-    const [expectedToken, setExpectedToken] = useState('secret_token_123');
-    const [receivedToken, setReceivedToken] = useState('secret_token_123');
-    const [tokenResult, setTokenResult] = useState('');
-
-    const [webhookPayload, setWebhookPayload] = useState('{ "event": "payment.succeeded", "data": { "amount": 1000 } }');
-    const [webhookSecret, setWebhookSecret] = useState('whsec_verysecretkey');
-    const [webhookTimestamp, setWebhookTimestamp] = useState('');
-    const [generatedSignature, setGeneratedSignature] = useState('');
-    const [receivedHeader, setReceivedHeader] = useState('');
-    const [verificationStatus, setVerificationStatus] = useState('');
-
-    useEffect(() => {
-        setWebhookTimestamp(Math.floor(Date.now() / 1000).toString());
-    }, []);
-    
-    const verifyToken = useCallback(() => {
-        if (expectedToken === receivedToken && expectedToken !== "") {
-            setTokenResult({ text: "權杖相符！請求被視為真實。", type: "success" });
-        } else if (expectedToken === "") {
-            setTokenResult({ text: "預期權杖為空。無法驗證。", type: "error" });
-        } else {
-            setTokenResult({ text: "權杖不符！應忽略此請求。", type: "error" });
-        }
-    }, [expectedToken, receivedToken]);
-
-    useEffect(() => {
-        verifyToken();
-    }, [verifyToken]);
-
-    const generateAndVerifySignature = useCallback(async () => {
-        if (!webhookSecret) {
-            setGeneratedSignature("需要密鑰金鑰。");
-            setVerificationStatus({ text: "驗證失敗：缺少密鑰。", type: "error" });
-            return;
-        }
-        if (!webhookTimestamp) {
-             const currentTs = Math.floor(Date.now() / 1000).toString();
-             setWebhookTimestamp(currentTs);
-        }
-
-        try {
-            const messageToSign = `${webhookTimestamp}.${webhookPayload}`;
-            const key = await crypto.subtle.importKey(
-                "raw", new TextEncoder().encode(webhookSecret),
-                { name: "HMAC", hash: "SHA-256" },
-                false, ["sign"]
-            );
-            const signatureBuffer = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(messageToSign));
-            const signatureHex = Array.from(new Uint8Array(signatureBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-            
-            setGeneratedSignature(signatureHex);
-            setReceivedHeader(`t=${webhookTimestamp},v1=${signatureHex}`);
-
-            // Simulate verification
-            const currentTime = Math.floor(Date.now() / 1000);
-            if (Math.abs(currentTime - parseInt(webhookTimestamp)) <= 300) { // 5 minutes tolerance
-                setVerificationStatus({ text: "簽章已驗證且時間戳記正常！請求是真實的。", type: "success" });
-            } else {
-                setVerificationStatus({ text: "簽章已驗證，但時間戳記過舊！可能是重放攻擊。", type: "error" });
+                `;
             }
-        } catch (error) {
-            console.error("HMAC Error:", error);
-            setGeneratedSignature("產生簽章時發生錯誤。");
-            setVerificationStatus({ text: "由於錯誤導致驗證失敗。", type: "error" });
+            return content;
         }
-    }, [webhookPayload, webhookSecret, webhookTimestamp]);
-    
-    useEffect(() => { // Initial call for HMAC signature
-        if (webhookTimestamp && webhookSecret) { // Ensure timestamp and secret are set
-             generateAndVerifySignature();
+
+        const renderOAuthFlowTab = () => Card({
+            title: "OAuth 2.0：權杖產生流程 (授權碼模式)",
+            children: `
+                <p>透過 OAuth，應用程式使用<strong>存取權杖 (access token)</strong> 代表使用者呼叫 API。取得此權杖涉及一個多步驟流程。Web 應用程式最常用的是「授權碼模式 (Authorization Code Grant)」。</p>
+                <h3 class="text-lg font-semibold text-gray-700 mt-4 mb-2">流程開始前：應用程式註冊</h3>
+                <p>應用程式的開發人員（例如 TripAdvisor）必須先向 API 提供者（例如 Facebook）註冊其應用程式。</p>
+                <ul class="list-disc list-inside space-y-1 mb-3">
+                    <li>他們提供一個<strong>重新導向 URL</strong> (或回呼 URL)：這是 API 提供者在使用者授權（或拒絕）應用程式後將使用者傳送回去的地方。</li>
+                    <li>API 提供者會向應用程式核發唯一的<strong>用戶端 ID</strong> (公開) 和<strong>用戶端密鑰</strong> (機密，應妥善保管於後端！)。</li>
+                </ul>
+                <h3 class="text-lg font-semibold text-gray-700 mt-4 mb-2">取得存取權杖的步驟：</h3>
+                <ol class="list-decimal list-inside space-y-2 mb-4">
+                    <li><strong>使用者授權請求：</strong>應用程式將使用者導向 API 提供者的授權頁面。</li>
+                    <li><strong>使用者授予 (或拒絕) 權限：</strong>使用者在 API 提供者端登入並同意授權。</li>
+                    <li><strong>應用程式用授權碼交換存取權杖：</strong>API 提供者將使用者導回應用程式，並附上授權碼。應用程式後端使用此碼與 Client Secret 向 API 提供者換取 Access Token。</li>
+                    <li><strong>應用程式存取受保護的資源：</strong>應用程式使用 Access Token 呼叫 API。</li>
+                </ol>
+                <p class="italic text-sm text-gray-500 mb-4">（文本中的圖 3-3 描述了這整個 OAuth 2.0 授權碼授予流程。）</p>
+                
+                ${SimulatorBox({
+                    title: "模擬：OAuth 2.0 授權碼流程 (簡化版)",
+                    children: `
+                        <p class="text-xs text-gray-600 mb-3">這是一個簡化的前端模擬，實際的 Client Secret 交換應在後端進行。</p>
+                        <div id="oauth-sim-content-area">
+                           ${renderOAuthFlowTabContent()}
+                        </div>
+                    `
+                })}
+
+                <h3 class="text-lg font-semibold text-gray-700 mt-6 mb-2">範圍 (Scopes)</h3>
+                <p>OAuth 範圍限制應用程式對使用者資料的存取。應用程式僅請求其需要的內容，而不是取得完整存取權限。例如：<code>read_profile</code> (讀取個人資料)、<code>write_tweets</code> (發布推文)。</p>
+                <ul class="list-disc list-inside space-y-1 my-2">
+                    <li><strong>精細的範圍是好的：</strong>讓使用者更清楚應用程式的權限需求，增加信任感。</li>
+                    <li><strong>定義範圍的考量：</strong>最小權限原則、隔離敏感資訊、按資源類型區分。</li>
+                </ul>
+                <h3 class="text-lg font-semibold text-gray-700 mt-6 mb-2">權杖驗證</h3>
+                <p>當 API 伺服器收到帶有存取權杖的請求時，它必須驗證：</p>
+                <ol class="list-decimal list-inside space-y-1 my-2">
+                    <li>存取權杖是否有效（未過期、未撤銷、存在於資料庫中）？</li>
+                    <li>權杖是否具有所請求操作所需的範圍 (scope)？</li>
+                </ol>
+                <p>若驗證失敗，應回傳錯誤。可考慮回傳如 <code>X-OAuth-Scopes</code> (權杖擁有的範圍) 和 <code>X-Accepted-OAuth-Scopes</code> (操作需要的範圍) 等標頭，幫助開發者除錯。</p>
+                <h3 class="text-lg font-semibold text-gray-700 mt-6 mb-2">權杖過期與更新權杖 (Refresh Tokens)</h3>
+                <p>存取權杖 (Access Token) 通常有生命週期限制 (例如數小時或數天)，以降低洩漏風險。</p>
+                <p><strong>更新權杖 (Refresh Token)：</strong></p>
+                <ul class="list-disc list-inside space-y-1 my-2">
+                    <li>一種特殊的權杖，用於在目前存取權杖過期時，無需使用者再次介入，即可取得新的存取權杖。</li>
+                    <li>應用程式後端使用 Refresh Token、Client ID 和 Client Secret 向權杖端點請求新的 Access Token。</li>
+                    <li>Refresh Token 通常有較長的生命週期，且應妥善保管。</li>
+                </ul>
+                ${Note({
+                    children: `<p><strong>故事：Slack 的長期權杖。</strong> Slack 最初的權杖永不過期，導致一些開發者不慎洩漏。後來 Slack 改用短期權杖並引入機制來偵測和撤銷洩漏的權杖，顯示了短期權杖的重要性。</p>`
+                })}
+                <h3 class="text-lg font-semibold text-gray-700 mt-6 mb-2">列出與撤銷授權</h3>
+                <p>API 提供者應提供介面讓使用者：</p>
+                <ul class="list-disc list-inside space-y-1 my-2">
+                    <li>查看他們已授權哪些應用程式存取其資料。</li>
+                    <li>能夠撤銷對特定應用程式的授權。</li>
+                </ul>
+                <p>同時，也應提供 API 端點讓開發者能以程式化方式撤銷權杖 (例如應用程式偵測到權杖可能已洩漏時)。</p>
+            `
+        });
+
+        const renderOAuthBestPracticesTab = () => Card({
+            title: "OAuth 2.0：最佳實踐",
+            children: `
+                <p>在建立您自己的 OAuth 授權伺服器時，請考量以下最佳實踐：</p>
+                <ul class="list-disc list-inside space-y-2 my-4">
+                    <li><strong>支援 <code>state</code> 參數：</strong>在授權請求和回調中使用此參數，以防止跨站請求偽造 (CSRF) 攻擊。用戶端產生隨機字串，伺服器原樣返回，用戶端驗證。</li>
+                    <li><strong>短期授權碼：</strong>授權碼 (Authorization Code) 應有非常短的生命週期 (例如幾分鐘內) 且僅供一次性使用。</li>
+                    <li><strong>一次性更新權杖 (考慮用於高敏感資料)：</strong>若更新權杖被重複使用，可能表示洩漏。一次性使用 (用後即發新的) 可增加偵測機會，但增加客戶端複雜度。</li>
+                    <li><strong>提供重設用戶端密鑰 (Client Secret) 的能力：</strong>讓應用程式開發者在其密鑰疑似洩漏時可以重設。</li>
+                    <li><strong>為敏感資訊設定專用 OAuth 範圍：</strong>不要預設授予過多權限，讓使用者明確知道應用程式請求的敏感權限。</li>
+                    <li><strong>所有端點強制使用 HTTPS：</strong>授權端點、權杖端點、重新導向 URI 都必須使用 HTTPS，以保護傳輸中的敏感資訊 (如權杖、授權碼)。</li>
+                    <li><strong>嚴格驗證重新導向 URL (Redirect URI)：</strong>在授權請求中，若提供了 <code>redirect_uri</code>，必須與應用程式註冊時預先登記的 URI 完全匹配或符合預設規則，防止授權碼被送到惡意端點。</li>
+                    <li><strong>禁止在 iframe 中呈現授權畫面：</strong>使用 <code>X-Frame-Options: DENY</code> 或 <code>Content-Security-Policy: frame-ancestors 'none'</code> HTTP 標頭，防止點擊劫持 (Clickjacking) 攻擊。</li>
+                    <li><strong>讓使用者知情新授權：</strong>當一個新的應用程式被授權存取使用者帳戶時，可以考慮透過電子郵件等方式通知使用者。</li>
+                    <li><strong>禁止誤導性的應用程式名稱：</strong>防止第三方應用程式使用可能讓使用者誤認為是官方應用程式的名稱或圖示。</li>
+                </ul>
+                ${Note({
+                    children: `<p><strong>故事：Google 文件網路釣魚攻擊 (2017)。</strong>一名攻擊者建立了一個名為「Google 文件」並使用相似圖示的惡意 Google OAuth 應用程式，誘騙使用者授予其存取 Google 帳戶的權限，成功釣魚了約一百萬個帳戶。</p>`
+                })}
+                <h3 class="text-xl font-semibold text-gray-700 mt-6 mb-3">從 Facebook 學到的教訓：權衡之舉</h3>
+                <p>Facebook 的平台因開發者應用程式存取使用者資料的方式而受到嚴格審查 (2016-2018)，即使這些存取是在使用者技術上已授予權限的情況下。主要啟示：</p>
+                <ul class="list-disc list-inside space-y-2 my-4">
+                    <li><strong>明確同意 (Clear Consent)：</strong>確保使用者在 OAuth 流程中<em>確切</em>了解他們正在授予哪些權限。範圍 (scope) 的描述應清晰易懂。允許使用者選擇授予較少、較精細的權限是個好主意，但過於細碎的範圍也可能讓使用者困惑。</li>
+                    <li><strong>監控第三方應用程式：</strong>API 提供者應積極監控第三方應用程式的行為，尋找潛在的服務條款 (ToS) 違規行為，即使資料存取是使用者授權的。必要時應停用或限制這些應用程式。</li>
+                    <li><strong>信任是關鍵：</strong>最終的信任關係主要存在於平台提供者和其客戶之間，而不僅僅是客戶和第三方應用程式之間。平台提供者對其平台的聲譽負有更大責任。</li>
+                    <li><strong>隱私與安全性的教育：</strong>消費者可能並不總是能清楚區分隱私 (privacy) 和安全性 (security)。對於消費性產品，平台需要認真思考如何向終端使用者傳達其平台的功能和資料使用方式。</li>
+                </ul>
+            `
+        });
+
+        const renderWebhooksTab = () => {
+            // Initial generation if needed
+            if (!whTokenResult.text) verifyWebhookTokenLogic();
+            if (!whGeneratedSignature) generateAndVerifyWebhookSignatureLogic();
+
+            return Card({
+                title: "WebHooks 安全性",
+                children: `
+                    <p>WebHook 是一個 URL，API 提供者會在事件發生時向該 URL 傳送 POST 請求（例如，Stripe 會在新付款時傳送通知，GitHub 會在新拉取請求時傳送通知）。由於這些 URL 通常是公開可存取的，因此接收端需要驗證請求的真實性。</p>
+
+                    <h3 class="text-xl font-semibold text-gray-700 mt-6 mb-3">1. 驗證權杖 (Verification Tokens)</h3>
+                    <p>一種簡單的方法，API 提供者和應用程式開發人員共享一個秘密字串（驗證權杖）。提供者在每個 WebHook 請求中傳送此權杖，接收端進行比對。</p>
+                    <p><strong>優點：</strong>實作簡單。</p>
+                    <p><strong>缺點：</strong>安全性相對較低，若權杖洩漏，攻擊者可偽造請求。</p>
+                    ${SimulatorBox({
+                        title: "模擬：WebHook 驗證權杖檢查",
+                        children: `
+                            ${Input({ label: "預期權杖 (您的應用程式密鑰)：", id: "webhookExpectedToken", value: whExpectedToken, onInput: "updateWebhookExpectedToken(this.value)" })}
+                            ${Input({ label: "收到的權杖 (來自 WebHook)：", id: "webhookReceivedToken", value: whReceivedToken, onInput: "updateWebhookReceivedToken(this.value)" })}
+                            ${Button({ onClick: "verifyWebhookTokenLogic(true)", children: "驗證權杖", className: "mb-3" })}
+                            ${whTokenResult.text ? `<p id="webhookTokenResult" class="text-sm p-2 rounded-md ${whTokenResult.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${whTokenResult.text}</p>` : '<p id="webhookTokenResult"></p>'}
+                        `
+                    })}
+
+                    <h3 class="text-xl font-semibold text-gray-700 mt-6 mb-3">2. 請求簽署 (WebHook Signatures / HMAC)</h3>
+                    <p>一種更常見且安全的方法。API 提供者使用一個共享密鑰 (Shared Secret) 和請求酬載 (Payload) 來計算一個雜湊訊息鑑別碼 (HMAC)，通常會將此簽章放在 HTTP 標頭中 (例如 <code>X-Hub-Signature-256</code> 或 <code>Stripe-Signature</code>)。接收端使用相同的密鑰和收到的酬載重新計算 HMAC，並與收到的簽章比對。</p>
+                    <h4>防止重放攻擊 (Replay Attacks)</h4>
+                    <p>為防止攻擊者重送有效的舊請求，簽署的內容通常會包含一個時間戳記。接收端會檢查時間戳記是否在可接受的範圍內 (例如，過去幾分鐘內)。</p>
+                    ${SimulatorBox({
+                        title: "模擬：WebHook HMAC 簽章驗證",
+                        children: `
+                            ${TextArea({ label: "WebHook 酬載 (JSON)：", id: "webhookPayload", value: whPayload, onInput: "updateWebhookPayload(this.value)" })}
+                            ${Input({ label: "共享密鑰金鑰 (Shared Secret Key)：", id: "webhookSecret", value: whSecret, onInput: "updateWebhookSecret(this.value)" })}
+                            ${Input({ label: "時間戳記 (秒，已簽署內容的一部分)：", id: "webhookTimestamp", value: whTimestamp, onInput: "updateWebhookTimestamp(this.value)", placeholder: "將自動填入目前時間戳記" })}
+                            ${Button({ onClick: "generateAndVerifyWebhookSignatureLogic(true)", children: "產生簽章並模擬驗證", className: "my-3" })}
+                            <div class="text-sm space-y-1">
+                                <p><strong>(模擬) 產生的簽章 (HMAC-SHA256)：</strong> <code id="whGeneratedSignature" class="break-all bg-gray-200 p-1 rounded">${whGeneratedSignature}</code></p>
+                                <p><strong>(模擬) 接收到的標頭 (範例)：</strong> <code id="whReceivedHeader" class="break-all bg-gray-200 p-1 rounded">${whReceivedHeader}</code></p>
+                                ${whVerificationStatus.text ? `<p id="whVerificationStatus" class="p-2 rounded-md ${whVerificationStatus.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${whVerificationStatus.text}</p>` : '<p id="whVerificationStatus"></p>'}
+                            </div>
+                        `
+                    })}
+                    ${Note({ children: `<p>實際的簽章產生和驗證方法 (例如要簽署的確切內容、使用的雜湊演算法、標頭名稱) 由各 API 提供者定義。請務必參閱其官方文件。</p>` })}
+
+                    <h3 class="text-xl font-semibold text-gray-700 mt-6 mb-3">3. 相互 TLS (mTLS)</h3>
+                    <p>在標準 TLS (HTTPS) 中，用戶端驗證伺服器的憑證。使用相互 TLS，伺服器也會驗證用戶端 (在此情境下，即發送 WebHook 的 API 提供者) 的憑證。這提供了更強的身份驗證，但設定和管理憑證較為複雜，通常用於企業對企業 (B2B) 的情境。</p>
+
+                    <h3 class="text-xl font-semibold text-gray-700 mt-6 mb-3">4. 精簡酬載 (Thin Payloads) 與 API 回呼擷取</h3>
+                    <p>一種非常安全的方法是，WebHook 的酬載只包含最少的資訊 (例如，事件 ID 或資源 ID)，告知接收端某事已發生，但不包含任何敏感的詳細資料。接收端應用程式然後必須使用其正常的 API 憑證 (例如 OAuth 存取權杖) 回呼 API 提供者的端點，以擷取完整的事件詳細資訊。這樣即使 WebHook 本身未經驗證或被攔截，敏感資料也不會直接暴露，因為詳細資料的擷取仍需通過標準的 API 身份驗證和授權。</p>
+                    <p><strong>範例：Gmail API</strong> - 當收件匣有變動時，Gmail 的 WebHook 可能只發送一個通知，應用程式需要使用已驗證的 API 請求來獲取具體的郵件變動內容。</p>
+                    
+                    <h3 class="text-xl font-semibold text-gray-700 mt-6 mb-3">WebHook 安全性最佳實踐</h3>
+                    <ul class="list-disc list-inside space-y-2 my-4">
+                        <li><strong>避免在 WebHook 酬載中傳送敏感資訊：</strong>這是最重要的原則。密碼、API 金鑰、個人身份資訊 (PII) 等都不應直接透過 WebHook 傳遞。</li>
+                        <li><strong>使用請求簽署 (HMAC)：</strong>這是目前推薦的主流方法，能驗證請求來源並確保酬載未被竄改。</li>
+                        <li><strong>包含時間戳記以防重放攻擊：</strong>如上所述，結合簽章使用。</li>
+                        <li><strong>支援共享密鑰的重新產生：</strong>讓應用程式開發者能夠在其密鑰疑似洩漏時，可以方便地重新產生並更新。</li>
+                        <li><strong>提供 SDK 和清晰的範例程式碼：</strong>降低開發者實作 WebHook 驗證的門檻和出錯機率。</li>
+                        <li><strong>使用 HTTPS：</strong>所有 WebHook 端點都必須使用 HTTPS。</li>
+                        <li><strong>考慮 IP 白名單：</strong>如果 API 提供者的出口 IP 是固定的，可以作為額外一層防護 (但不能作為唯一的安全措施)。</li>
+                    </ul>
+                `
+            });
+        };
+
+        const renderConclusionTab = () => Card({
+            title: "關於 API 安全性的總結",
+            children: `
+                <p>安全性是一項複雜且持續的挑戰，而保護 API 更增加了另一層難度。一旦應用程式開始使用您實作的安全性機制，就很難更改它。一個漏洞可能需要許多開發人員更新他們的應用程式。</p>
+                <p class="font-semibold mt-4">關鍵要點：</p>
+                <blockquote class="border-l-4 border-blue-500 pl-4 py-2 my-4 bg-blue-50 text-blue-700">
+                    <p>在您發布 API <em>之前</em>，深入思考安全性影響至關重要。雖然創新新的安全性機制可能很誘人，但除非您有安全性專家設計並徹底審查它們，否則這通常是一個巨大的風險。</p>
+                    <p class="mt-2">依賴經過精心設計、測試和開放的安全性標準（如 OAuth 2.0），這些標準多年來經過專家和駭客的檢驗，可以顯著降低您遇到重大安全性漏洞的機會。</p>
+                </blockquote>
+                <p>本章涵蓋了身份驗證、授權以及 OAuth 和 WebHook 安全性等特定技術。理解並正確實施這些機制，對於建構安全可靠的 API 至關重要。</p>
+            `
+        });
+
+        // --- Tab Data ---
+        const tabsData = [
+            { id: 'intro', label: '簡介與核心概念', renderFn: renderIntroTab },
+            { id: 'basicAuth', label: '基本身份驗證', renderFn: renderBasicAuthTab },
+            { id: 'oauthIntro', label: 'OAuth 2.0：簡介', renderFn: renderOAuthIntroTab },
+            { id: 'oauthFlow', label: 'OAuth 2.0：流程與權杖', renderFn: renderOAuthFlowTab },
+            { id: 'oauthBestPractices', label: 'OAuth 2.0：最佳實踐', renderFn: renderOAuthBestPracticesTab },
+            { id: 'webhooks', label: 'WebHooks 安全性', renderFn: renderWebhooksTab },
+            { id: 'conclusion', label: '結論', renderFn: renderConclusionTab },
+        ];
+
+        // --- Core Logic ---
+        const tabNavigationContainer = document.getElementById('tabs-nav');
+        const tabContentContainer = document.getElementById('tab-content-container');
+
+        function setActiveTab(tabId) {
+            activeTabId = tabId;
+            render();
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [webhookTimestamp, webhookSecret]); // Only re-run if timestamp or secret changes after initial setup
 
+        function renderTabButtons() {
+            tabNavigationContainer.innerHTML = tabsData.map(tab => 
+                TabButton({
+                    label: tab.label,
+                    isActive: tab.id === activeTabId,
+                    onClick: `setActiveTab('${tab.id}')`
+                })
+            ).join('');
+        }
 
-    return (
-        <Card title="WebHooks 安全性">
-            <p>WebHook 是一個 URL，API 提供者會在事件發生時向該 URL 傳送 POST 請求。保護 WebHooks 的方式有所不同，因為這些 URL 通常是公開存取的。</p>
+        function renderTabContent() {
+            const activeTabData = tabsData.find(tab => tab.id === activeTabId);
+            if (activeTabData && activeTabData.renderFn) {
+                tabContentContainer.innerHTML = activeTabData.renderFn();
+                // After rendering, re-evaluate scripts or attach listeners if dynamic content needs it
+                // For complex tabs with internal state changes, they might need specific update functions
+            } else {
+                tabContentContainer.innerHTML = `<p class="text-center text-gray-500">請選擇一個分頁來查看內容。</p>`;
+            }
+        }
+        
+        function render() {
+            renderTabButtons();
+            renderTabContent();
+        }
 
-            <h3 className="text-xl font-semibold text-gray-700 mt-6 mb-3">1. 驗證權杖</h3>
-            <p>一種簡單的方法，API 提供者和應用程式開發人員共享一個秘密字串（驗證權杖）。</p>
-            <SimulatorBox title="模擬：WebHook 驗證權杖檢查">
-                <Input label="預期權杖 (您的應用程式密鑰)：" id="webhookExpectedToken" value={expectedToken} onChange={(e) => setExpectedToken(e.target.value)} />
-                <Input label="收到的權杖 (來自 WebHook)：" id="webhookReceivedToken" value={receivedToken} onChange={(e) => setReceivedToken(e.target.value)} />
-                <Button onClick={verifyToken} className="mb-3">驗證權杖</Button>
-                {tokenResult && <p className={`text-sm p-2 rounded-md ${tokenResult.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{tokenResult.text}</p>}
-            </SimulatorBox>
+        // --- Specific Tab Logic Functions ---
 
-            <h3 className="text-xl font-semibold text-gray-700 mt-6 mb-3">2. 請求簽署 (WebHook 簽章 / HMAC)</h3>
-            <p>一種更常見且安全的方法。WebHook 酬載是「已簽署」的。提供者使用共享密鑰計算請求主體的 HMAC，並將簽章放在 HTTP 標頭中。</p>
-            <SimulatorBox title="模擬：WebHook HMAC 簽章驗證">
-                <TextArea label="WebHook 酬載 (JSON)：" id="webhookPayload" value={webhookPayload} onChange={(e) => setWebhookPayload(e.target.value)} />
-                <Input label="共享密鑰金鑰：" id="webhookSecret" value={webhookSecret} onChange={(e) => setWebhookSecret(e.target.value)} />
-                <Input label="時間戳記 (秒，已簽署內容的一部分)：" id="webhookTimestamp" value={webhookTimestamp} onChange={(e) => setWebhookTimestamp(e.target.value)} />
-                <p className="text-xs text-gray-500 mb-3">如果為空，腳本將自動填入目前時間戳記。</p>
-                <Button onClick={generateAndVerifySignature} className="mb-3">產生簽章並模擬驗證</Button>
-                <div className="text-sm space-y-1">
-                    <p><strong>產生的簽章 (HMAC-SHA256)：</strong> <code className="break-all">{generatedSignature}</code></p>
-                    <p><strong>模擬的接收標頭：</strong> <code className="break-all">{receivedHeader}</code></p>
-                    {verificationStatus && <p className={`p-2 rounded-md ${verificationStatus.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{verificationStatus.text}</p>}
-                </div>
-            </SimulatorBox>
-            <Note><p>實際的簽章產生通常涉及在雜湊之前組合時間戳記、分隔符號 (如 '.') 和原始請求主體。確切方法由 API 提供者指定。</p></Note>
+        // Basic Auth
+        function updateBasicAuthUser(value) {
+            basicAuthUser = value;
+            generateBasicAuthHeaderLogic();
+        }
+        function updateBasicAuthPass(value) {
+            basicAuthPass = value;
+            generateBasicAuthHeaderLogic();
+        }
+        function generateBasicAuthHeaderLogic(isButtonClick = false) {
+            const c = `${basicAuthUser}:${basicAuthPass}`;
+            basicAuthCombined = c;
+            try {
+                const e = btoa(c);
+                basicAuthEncoded = e;
+                basicAuthHeaderOutput = `Authorization: Basic ${e}`;
+            } catch (error) {
+                basicAuthEncoded = "編碼錯誤（可能包含非 ASCII 字元）。";
+                basicAuthHeaderOutput = 'Authorization: Basic ...';
+                console.error("Base64 encoding error:", error);
+            }
+            if (isButtonClick || document.getElementById('basicAuthCombined')) { // Re-render only if elements exist or button click
+                document.getElementById('basicAuthCombined').textContent = basicAuthCombined;
+                document.getElementById('basicAuthEncoded').textContent = basicAuthEncoded;
+                document.getElementById('basicAuthHeaderOutput').textContent = basicAuthHeaderOutput;
+            }
+        }
 
-            <h3 className="text-xl font-semibold text-gray-700 mt-6 mb-3">3. 相互 TLS (mTLS)</h3>
-            <p>伺服器和用戶端都使用憑證相互驗證。安全性強，但在網路層級實作，設定較複雜。</p>
+        // OAuth Flow
+        function setOAuthSimStep(step) {
+            oauthSimStep = step;
+            document.getElementById('oauth-sim-content-area').innerHTML = renderOAuthFlowTabContent();
+        }
+        function resetOAuthSimulation() {
+            setOAuthSimStep(0);
+        }
+        
+        // Webhooks - Token Verification
+        function updateWebhookExpectedToken(value) {
+            whExpectedToken = value;
+            verifyWebhookTokenLogic();
+        }
+        function updateWebhookReceivedToken(value) {
+            whReceivedToken = value;
+            verifyWebhookTokenLogic();
+        }
+        function verifyWebhookTokenLogic(isButtonClick = false) {
+            if (!whExpectedToken) {
+                whTokenResult = { text: "預期權杖不能為空。", type: "error" };
+            } else if (whExpectedToken === whReceivedToken) {
+                whTokenResult = { text: "權杖相符！請求被視為真實。", type: "success" };
+            } else {
+                whTokenResult = { text: "權杖不符！應忽略此請求。", type: "error" };
+            }
+            if (isButtonClick || document.getElementById('webhookTokenResult')) {
+                const el = document.getElementById('webhookTokenResult');
+                el.textContent = whTokenResult.text;
+                el.className = `text-sm p-2 rounded-md ${whTokenResult.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
+            }
+        }
 
-            <h3 className="text-xl font-semibold text-gray-700 mt-6 mb-3">4. 精簡酬載與 API 擷取</h3>
-            <p>WebHook 酬載僅含最少資訊 (如事件 ID)，應用程式需透過已驗證的 API 呼叫取得完整詳情。即使 WebHook 未驗證，敏感資料仍受保護。</p>
+        // Webhooks - HMAC Signature
+        function updateWebhookPayload(value) {
+            whPayload = value;
+            generateAndVerifyWebhookSignatureLogic();
+        }
+        function updateWebhookSecret(value) {
+            whSecret = value;
+            generateAndVerifyWebhookSignatureLogic();
+        }
+        function updateWebhookTimestamp(value) {
+            whTimestamp = value;
+            // Don't auto-trigger signature generation on timestamp manual edit, wait for button or other field change
+        }
+
+        async function generateAndVerifyWebhookSignatureLogic(isButtonClick = false) {
+            if (!whSecret) {
+                whGeneratedSignature = "需要密鑰金鑰。";
+                whVerificationStatus = { text: "驗證失敗：缺少密鑰。", type: "error" };
+            } else {
+                let currentTimestamp = whTimestamp;
+                if (!currentTimestamp) {
+                     currentTimestamp = Math.floor(Date.now() / 1000).toString();
+                     whTimestamp = currentTimestamp; 
+                     if(document.getElementById('webhookTimestamp')) document.getElementById('webhookTimestamp').value = whTimestamp;
+                }
+
+                try {
+                    const messageToSign = `${currentTimestamp}.${whPayload}`;
+                    const encoder = new TextEncoder();
+                    const keyData = encoder.encode(whSecret);
+                    const messageData = encoder.encode(messageToSign);
+
+                    const cryptoKey = await crypto.subtle.importKey(
+                        "raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+                    );
+                    const signatureBuffer = await crypto.subtle.sign("HMAC", cryptoKey, messageData);
+                    const signatureHex = Array.from(new Uint8Array(signatureBuffer))
+                        .map(b => b.toString(16).padStart(2, '0')).join('');
+                    
+                    whGeneratedSignature = signatureHex;
+                    whReceivedHeader = `t=${currentTimestamp},v1=${signatureHex}`;
+
+                    const nowSeconds = Math.floor(Date.now() / 1000);
+                    const toleranceSeconds = 300; // 5 minutes
+                    if (Math.abs(nowSeconds - parseInt(currentTimestamp)) <= toleranceSeconds) {
+                        whVerificationStatus = { text: "簽章已(模擬)驗證且時間戳記正常！請求是真實的。", type: "success" };
+                    } else {
+                        whVerificationStatus = { text: "簽章已(模擬)驗證，但時間戳記過舊！可能是重放攻擊。", type: "error" };
+                    }
+                } catch (error) {
+                    console.error("HMAC Error:", error);
+                    whGeneratedSignature = "產生簽章時發生錯誤。";
+                    whVerificationStatus = { text: "由於錯誤導致驗證失敗。", type: "error" };
+                }
+            }
+
+            if (isButtonClick || document.getElementById('whGeneratedSignature')) {
+                document.getElementById('whGeneratedSignature').textContent = whGeneratedSignature;
+                document.getElementById('whReceivedHeader').textContent = whReceivedHeader;
+                const statusEl = document.getElementById('whVerificationStatus');
+                statusEl.textContent = whVerificationStatus.text;
+                statusEl.className = `p-2 rounded-md ${whVerificationStatus.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
+            }
+        }
+
+        // --- Initial Setup ---
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('current-year').textContent = new Date().getFullYear();
+            // Set initial active tab from URL hash if present, or default
+            const hash = window.location.hash.substring(1);
+            if (tabsData.some(tab => tab.id === hash)) {
+                activeTabId = hash;
+            } else {
+                activeTabId = tabsData[0].id; // Default to the first tab
+            }
             
-            <h3 className="text-xl font-semibold text-gray-700 mt-6 mb-3">WebHook 安全性最佳實踐</h3>
-            <ul className="list-disc list-inside space-y-2 my-4">
-                <li>避免在 WebHooks 中包含敏感資訊。</li>
-                <li>已簽署 WebHooks 應包含時間戳記以防重放攻擊。</li>
-                <li>支援共享密鑰的重新產生。</li>
-                <li>提供 SDK 和範例程式碼協助開發者正確驗證。</li>
-            </ul>
-        </Card>
-    );
-};
-
-const ConclusionTab = () => (
-    <Card title="關於 API 安全性的總結">
-        <p>安全性是一項複雜且持續的挑戰，而保護 API 更增加了另一層難度。一旦應用程式開始使用您實作的安全性機制，就很難更改它。一個漏洞可能需要許多開發人員更新他們的應用程式。</p>
-        <p className="font-semibold mt-4">關鍵要點：</p>
-        <blockquote className="border-l-4 border-blue-500 pl-4 py-2 my-4 bg-blue-50 text-blue-700">
-            <p>在您發布 API <em>之前</em>，深入思考安全性影響至關重要。雖然創新新的安全性機制可能很誘人，但除非您有安全性專家設計並徹底審查它們，否則這通常是一個巨大的風險。</p>
-            <p className="mt-2">依賴經過精心設計、測試和開放的安全性標準（如 OAuth 2.0），這些標準多年來經過專家和駭客的檢驗，可以顯著降低您遇到重大安全性漏洞的機會。</p>
-        </blockquote>
-        <p>本章涵蓋了身份驗證、授權以及 OAuth 和 WebHook 安全性等特定技術。在下一章（此處未涵蓋的第四章）中，您通常會學習 API 設計的戰術性最佳實踐，這些實踐有助於提供卓越的開發人員體驗，而這通常與良好的安全性密切相關。</p>
-    </Card>
-);
-
-
-const tabsData = [
-    { id: 'intro', label: '簡介與核心概念', component: IntroTab },
-    { id: 'basicAuth', label: '基本身份驗證', component: BasicAuthTab },
-    { id: 'oauthIntro', label: 'OAuth 2.0：簡介', component: OAuthIntroTab },
-    { id: 'oauthFlow', label: 'OAuth 2.0：流程與權杖', component: OAuthFlowTab },
-    { id: 'oauthBestPractices', label: 'OAuth 2.0：最佳實踐', component: OAuthBestPracticesTab },
-    { id: 'webhooks', label: 'WebHooks 安全性', component: WebhooksTab },
-    { id: 'conclusion', label: '結論', component: ConclusionTab },
-];
-
-export default function App() {
-    const [activeTab, setActiveTab] = useState(tabsData[0].id);
-
-    const ActiveComponent = tabsData.find(tab => tab.id === activeTab)?.component;
-
-    return (
-        <div className="min-h-screen bg-gray-100 p-4 md:p-8">
-            <header className="text-center mb-8">
-                <h1 className="text-3xl md:text-4xl font-bold text-blue-700">互動式 API 安全性指南</h1>
-                <p className="text-md md:text-lg text-gray-600 mt-2">逐步探索第三章的概念 (React 版本)</p>
-            </header>
-
-            <div className="mb-6 bg-white shadow-md rounded-lg">
-                <div className="border-b border-gray-200">
-                    <nav className="-mb-px flex flex-wrap justify-center" aria-label="Tabs">
-                        {tabsData.map(tab => (
-                            <TabButton
-                                key={tab.id}
-                                label={tab.label}
-                                isActive={activeTab === tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                            />
-                        ))}
-                    </nav>
-                </div>
-            </div>
+            render(); // Initial render
             
-            <main>
-                {ActiveComponent ? <ActiveComponent /> : <p>請選擇一個分頁</p>}
-            </main>
+            // Update URL hash on tab change for deep linking (optional)
+            window.addEventListener('hashchange', () => {
+                const hash = window.location.hash.substring(1);
+                 if (tabsData.some(tab => tab.id === hash) && hash !== activeTabId) {
+                    setActiveTab(hash);
+                }
+            });
+        });
 
-            <footer className="text-center mt-12 text-sm text-gray-500">
-                <p>&copy; {new Date().getFullYear()} API 安全性學習資源</p>
-            </footer>
-        </div>
-    );
-}
+        // Helper to update URL hash without triggering scroll
+        function updateURLHash(tabId) {
+            if (history.pushState) {
+                history.pushState(null, null, '#' + tabId);
+            } else {
+                window.location.hash = '#' + tabId;
+            }
+        }
+        
+        // Modified setActiveTab to include URL hash update
+        function setActiveTab(tabId) {
+            activeTabId = tabId;
+            updateURLHash(tabId); // Update hash
+            render();
+        }
 
+    </script>
+</body>
+</html>
